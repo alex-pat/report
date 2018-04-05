@@ -6,13 +6,13 @@
 
 Одним из интерфейсов получения информаци о процессах и потоках в операционной
 системе Windows является библиотека Tool Help\cite{tool_help_article}. Ядром
-библиотеки является поняние \textit{snapshot}. Snapshot~--- моментальный снимок
-(копия только для чтения) одного или нискольких списков, находящихся в системной
-памяти: процессы, потоки, модули и кучи.
+библиотеки является поняние снимка. Снимок является копией только для чтения
+одного или нискольких списков, находящихся в системной памяти:
+процессы, потоки, модули и кучи.
 
 Процессы, использующие функции Tool Help, получают доступ к этим спискам из
 моментальных снимков, а не непосредственно из операционной системы.
-Непосредственно сами списки в системной памяти постоянно изменяются, когда
+Нpackage.json or Gemfile.епосредственно сами списки в системной памяти постоянно изменяются, когда
 процессы запускаются и завершаются, потоки создаются и уничтожаются, исполняемые
 модули загружаются и выгружаются из системной памяти, а кучи создаются и
 уничтожаются. Использование информации из снимка предотвращает несоответствия и
@@ -26,16 +26,16 @@
 Снимок создаётся функцией \texttt{CreateToolhelp32Snapshot}. Она имеет слудующее
 определение\cite{win_tool_help}:
 
-\bigskip
+\medskip
 \begin{adjustwidth}{\fivecharsapprox}{}
-\begin{lstlisting}[language=C, basicstyle=\small\ttfamily]
+\begin{lstlisting}[basicstyle=\small\ttfamily]
 HANDLE WINAPI CreateToolhelp32Snapshot(
   _In_ DWORD dwFlags,
   _In_ DWORD th32ProcessID
-  );
+);
 \end{lstlisting}
 \end{adjustwidth}
-\bigskip
+\medskip
 
 Предоставляется возможным управление содержимым снимка, указав одно или
 несколько следующих констант в параметре \texttt{th32ProcessID} при вызове
@@ -67,9 +67,9 @@ HANDLE WINAPI CreateToolhelp32Snapshot(
 заполняют структуру \texttt{PROCESSENTRY32} информацией о процессе в из снимка.
 Структура \texttt{PROCESSENTRY32} имеет следующее определение:
 
-\bigskip
+\medskip
 \begin{adjustwidth}{\fivecharsapprox}{}
-\begin{lstlisting}[language=C, basicstyle=\small\ttfamily]
+\begin{lstlisting}[basicstyle=\small\ttfamily]
 typedef struct tagPROCESSENTRY32 {
   DWORD     dwSize;
   DWORD     cntUsage;
@@ -84,7 +84,7 @@ typedef struct tagPROCESSENTRY32 {
 } PROCESSENTRY32, *PPROCESSENTRY32;
 \end{lstlisting}
 \end{adjustwidth}
-\bigskip
+\medskip
 
 Как видно из определения, предоставленный разработчиками системы интерфейс
 позволяет получить такие параметры процесса, как идентификатор, число потоков,
@@ -94,22 +94,74 @@ typedef struct tagPROCESSENTRY32 {
 интерфейса, по возможности устойчивого к изменениям архитектуры системы, при
 которых элементы существующего интерфейса теряют смысл.
 
+Несмотря на то, что система macOS является прямым потомком UNIX, она не имеет
+собственной реализации \texttt{procfs}. Такие утилиты как \texttt{ps} используют
+вместо этого интерфейсы kvm и sysctl\cite{osxproc}. Кроме того, предоставляется
+системная библиотека libproc.h, а ныне устаревшие версии macOS для сбора
+информации о процессах имели интерфейс Process Manager.
+
+Process Manager ведет список всех открытых процессов\cite{procmanag}. Получение
+элементов списка производится вызовами функции \texttt{GetNextProcess}. Такой
+интерфейс похож на решение в ОС Microsoft Windows, однако не требует создания
+снимка, а в качестве единственного аргумента принимает последний валидный
+идентификатор процесса, возвращенный одной из функций % \texttt{GetNextProcess},
+\texttt{LaunchApplication}, \texttt{GetFrontProcess}, \texttt{GetCurrentProcess}
+или константу \texttt{kNoProcess} в начале хождения по списку. Порядок, в
+котором будут предоставляться идентификаторы, жёстко не регламентирован и
+является внутренним для Process Manager. Кроме того, полученный идентификатор
+процесса можно использовать только в других функциях Process Manager.
+
+Для получения информации о конкретном процессе в Process Manager используется
+функция \texttt{GetProcessInformation}. Кроме полученного ранее инденитфикатора
+процесса в функцию передаётся указатель на структуру \texttt{ProcessInfoRec}, в
+которую будет помещена информация о процессе. Структура имеет следующее
+определение:
+
+\medskip
+\begin{adjustwidth}{\fivecharsapprox}{}
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+TYPE ProcessInfoRec =
+   RECORD
+      processInfoLength:   LongInt;
+      processName:         StringPtr;
+      processNumber:       ProcessSerialNumber;
+      processType:         LongInt;
+      processSignature:    OSType;
+      processMode:         LongInt;
+      processLocation:     Ptr;
+      processSize:         LongInt;
+      processFreeMem:      LongInt;
+      processLauncher:     ProcessSerialNumber;
+      processLaunchDate:   LongInt;
+      processActiveTime:   LongInt;
+      processAppSpec:      FSSpecPtr;
+   END;
+\end{lstlisting}
+\end{adjustwidth}
+\medskip
+
+В структуре водержится, имя и идентификатор процесса, тип и подпись процесса,
+адрес раздела с процессом, размер свободной памяти в куче, идентификатор
+родительского процесса, время запуска процесса, накопленное процессорное время и
+расположение исполняемого файла процесса. Кроме этого, имеются флаги, которые
+описывают, является ли процесс приложением или Desk Accessory.
+
+Библиотека libproc.h предоставляет бинарный интерфейсз
+
 \subsection{Аналитический обзор}
 \label{sub:domain:analitic_overview}
-В источнике \cite{kernel_docs} меньше всего пунктов бибтеха.
-
-В источнике \cite{rlove} больше всего пунктов бибтеха.
-В источнике \cite{understanding} средненько пунктов бибтеха.
-
-В источнике \cite{tanenbaum} средненько пунктов бибтеха.
-
-В источнике \cite{johnson} средненько пунктов бибтеха.
-В источнике \cite{kernelnewbies} средненько пунктов бибтеха.
-В источнике \cite{vagin} средненько пунктов бибтеха.
-В источнике \cite{lkml} средненько пунктов бибтеха.
-В источнике \cite{anatomy} средненько пунктов бибтеха.
-В источнике \cite{lwn} средненько пунктов бибтеха.
-А источник \cite{map} карта!
-Источник \cite{greg}~--- книга Грега.
-В источнике \cite{profarch} средненько пунктов бибтеха.
-В источнике \cite{man_syscall} средненько пунктов бибтеха.
+\nocite{
+  kernel_docs,
+  rlove,
+  understanding,
+  tanenbaum,
+  johnson,
+  kernelnewbies,
+  vagin,
+  lkml,
+  anatomy,
+  lwn,
+  map,
+  greg,
+  profarch,
+  man_syscall}
