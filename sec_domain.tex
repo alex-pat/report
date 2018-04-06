@@ -4,6 +4,9 @@
 \subsection{Обзор существующих аналогов}
 \label{sub:domain:analogs}
 
+\subsubsection{Windows Toop Help}
+\label{sub:domain:analogs:windows}
+
 Одним из интерфейсов получения информаци о процессах и потоках в операционной
 системе Windows является библиотека Tool Help\cite{tool_help_article}. Ядром
 библиотеки является поняние снимка. Снимок является копией только для чтения
@@ -12,7 +15,7 @@
 
 Процессы, использующие функции Tool Help, получают доступ к этим спискам из
 моментальных снимков, а не непосредственно из операционной системы.
-Нpackage.json or Gemfile.епосредственно сами списки в системной памяти постоянно изменяются, когда
+Непосредственно сами списки в системной памяти постоянно изменяются, когда
 процессы запускаются и завершаются, потоки создаются и уничтожаются, исполняемые
 модули загружаются и выгружаются из системной памяти, а кучи создаются и
 уничтожаются. Использование информации из снимка предотвращает несоответствия и
@@ -94,6 +97,9 @@ typedef struct tagPROCESSENTRY32 {
 интерфейса, по возможности устойчивого к изменениям архитектуры системы, при
 которых элементы существующего интерфейса теряют смысл.
 
+\subsubsection{Apple macOS}
+\label{sub:domain:analogs:macos}
+
 Несмотря на то, что система macOS является прямым потомком UNIX, она не имеет
 собственной реализации \texttt{procfs}. Такие утилиты как \texttt{ps} используют
 вместо этого интерфейсы kvm и sysctl\cite{osxproc}. Кроме того, предоставляется
@@ -146,10 +152,56 @@ TYPE ProcessInfoRec =
 расположение исполняемого файла процесса. Кроме этого, имеются флаги, которые
 описывают, является ли процесс приложением или Desk Accessory.
 
-Библиотека libproc.h предоставляет бинарный интерфейсз
+Библиотека libproc.h предоставляет бинарный интерфейс, дающий возможность
+различную информацию, не привязываясь к внутренним структурам данных, так как
+используются либо типы, определённые в стандарте POSIX, либо структуры,
+определённые специально только для передачи информации пространству
+пользователя\cite{libproc}. Определения некоторых функций:
+
+\medskip
+\begin{adjustwidth}{\fivecharsapprox}{}
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+int	proc_listpidspath(uint32_t	type,
+			  uint32_t	typeinfo,
+			  const char	*path,
+			  uint32_t	pathflags,
+			  void		*buffer,
+			  int		buffersize);
+int proc_listpids(uint32_t type, uint32_t typeinfo,
+                  void *buffer, int buffersize);
+int proc_listallpids(void * buffer, int buffersize);
+int proc_listpgrppids(pid_t pgrpid,
+                      void * buffer, int buffersize);
+int proc_listchildpids(pid_t ppid,
+                       void * buffer, int buffersize);
+int proc_pidinfo(int pid, int flavor, uint64_t arg,
+                 void *buffer, int buffersize);
+int proc_pidfdinfo(int pid, int fd, int flavor,
+                   void * buffer, int buffersize);
+int proc_pidfileportinfo(int pid, uint32_t fileport,
+        int flavor, void *buffer, int buffersize);
+\end{lstlisting}
+\end{adjustwidth}
+\medskip
+
+Такой подход является более устойчивым к изменениям внутренней архитектуры ядра,
+при нём маловероятна ситуация, когда большая часть полей структуры больше нет
+смысла использовать, как это произошло с Tool Help в Windows. Кроме того, такие
+функции достаточно расширяемы засчёт параметра, определяющего тип результирующих
+данных, необходимых пользовательской программе.
 
 \subsection{Аналитический обзор}
 \label{sub:domain:analitic_overview}
+
+Очень критическая ситуация произошла с мужчиной на рисунке \ref{fig:perf_bug}.
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.7]{perf_bug.png}
+  \caption{Сообщение о низкой производительности в багтрекере ядра\cite{slowperf}}
+  \label{fig:perf_bug}
+\end{figure}
+
 \nocite{
   kernel_docs,
   rlove,
