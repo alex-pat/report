@@ -1,3 +1,36 @@
 \section{СИСТЕМНОЕ ПРОЕКТИРОВАНИЕ}
 \label{sec:sys}
 
+Изучив теоретические аспекты разработки кода ядра, рассмотрев различные
+существующие используемые и неиспользуемые аналоги и выработав список
+необходимых для разработки требований, разбиваем систему на компоненты.
+Компоненты в виде блоков и их взаимосвязи указаны на чертеже.
+В разрабатываемом модуле можно выделить следующие блоки:
+\begin{itemize}
+\item системный вызов \texttt{sys\_pidmap};
+\item системный вызов \texttt{sys\_pidinfo};
+\item системный вызов \texttt{sys\_fdmap};
+\item системный вызов \texttt{sys\_pidfdopen};
+\item системный вызов \texttt{sys\_pidfdinfo};
+\item процесс пространства пользователя.
+\end{itemize}
+
+
+\subsection{Системный вызов \texttt{sys\_pidmap}}
+\label{sub:sys:sys_pidmap}
+
+
+\subsection{Системный вызов \texttt{sys\_pidinfo}}
+\label{sub:sys:sys_pidinfo}
+
+
+\subsection{Системный вызов \texttt{sys\_fdmap}}
+\label{sub:sys:sys_fdmap}
+
+
+\subsection{Системный вызов \texttt{sys\_pidfdopen}}
+\label{sub:sys:sys_pidfdopen}
+
+
+\subsection{Системный вызов \texttt{sys\_pidfdinfo}}
+\label{sub:sys:sys_pidfdinfo}
