@@ -28,11 +28,10 @@
 % Почему: Пункт 2.1.1 Требований по оформлению пояснительной записки.
 \usepackage{extsizes}
 
-
 % Зачем: Длинна, пимерно соответвующая 5 символам
 % Почему: Требования содержат странное требование про отсупы в 5 символов (для немоноширинного шрифта :| )
 \newlength{\fivecharsapprox}
-\setlength{\fivecharsapprox}{6ex}
+\setlength{\fivecharsapprox}{1.5cm}
 
 
 % Зачем: Добавляет отступы для абзацев.
@@ -43,7 +42,7 @@
 
 % Зачем: Настраивает отступы от границ страницы.
 % Почему: Пункт 2.1.2 Требований по оформлению пояснительной записки.
-\usepackage[left=3cm,top=2.0cm,right=1.5cm,bottom=2.7cm]{geometry}
+\usepackage[left=3cm,top=2.0cm,right=1.5cm,bottom=2.695cm]{geometry}
 
 
 % Зачем: Настраивает межстрочный интервал, для размещения 40 +/- 3 строки текста на странице.
@@ -465,4 +464,13 @@
 \renewcommand\@biblabel[1]{#1}
 \makeatother
 
+\lstdefinestyle{cstyle}{
+   xleftmargin=1.25cm,
+   basicstyle=\fontencoding{T1}\small\ttfamily,
+   breaklines=true,
+   columns=fullflexible
+}
+
 \usepackage{changepage}
+\let\OldTexttt\texttt
+\renewcommand{\texttt}[1]{\OldTexttt{\fontencoding{T1}\ttfamily{#1}}}
