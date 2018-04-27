@@ -31,7 +31,7 @@
 % Зачем: Длинна, пимерно соответвующая 5 символам
 % Почему: Требования содержат странное требование про отсупы в 5 символов (для немоноширинного шрифта :| )
 \newlength{\fivecharsapprox}
-\setlength{\fivecharsapprox}{1.5cm}
+\setlength{\fivecharsapprox}{1.25cm}
 
 
 % Зачем: Добавляет отступы для абзацев.
@@ -350,28 +350,6 @@
 
 \renewcommand{\lstlistingname}{Листинг}
 
-\lstdefinelanguage{TypeScript}{
-    keywords={typeof, number, string, boolean, public, private, protected, virtual, static, override, class, interface, declare, module, any, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break, for, console, log},
-    keywordstyle=\text,
-    ndkeywords={class, export,exports, boolean, throw, implements, import, this},
-    keywordstyle=\text,
-    identifierstyle=\color{black},
-    sensitive=false,
-    showstringspaces=false,
-    comment=[l]{//},
-    morecomment=[s]{/*}{*/},
-    commentstyle=\color{black}\ttfamily,
-    stringstyle=\color{black}\ttfamily,
-    morestring=[b]',
-    morestring=[b]",
-    frame=none,
-    numbersep=16pt,
-    rulecolor=\color{black},
-    breaklines=true,
-    columns=fullflexible,
-    basicstyle=\normalsize\ttfamily
-}
-
 % Зачем: Нумерация листингов в пределах секции
 \AtBeginDocument{\numberwithin{lstlisting}{section}}
 
@@ -471,6 +449,5 @@
    columns=fullflexible
 }
 
-\usepackage{changepage}
 \let\OldTexttt\texttt
 \renewcommand{\texttt}[1]{\OldTexttt{\fontencoding{T1}\ttfamily{#1}}}

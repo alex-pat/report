@@ -30,14 +30,12 @@
 определение\cite{win_tool_help}:
 
 \medskip
-\begin{adjustwidth}{\fivecharsapprox}{}
-\begin{lstlisting}[basicstyle=\fontencoding{T1}\small\ttfamily]
+\begin{lstlisting}[style=cstyle]
 HANDLE WINAPI CreateToolhelp32Snapshot(
   _In_ DWORD dwFlags,
   _In_ DWORD th32ProcessID
 );
 \end{lstlisting}
-\end{adjustwidth}
 \medskip
 
 Предоставляется возможным управление содержимым снимка, указав одно или
@@ -70,8 +68,7 @@ HANDLE WINAPI CreateToolhelp32Snapshot(
 Структура \texttt{PROCESSENTRY32} имеет следующее определение:
 
 \medskip
-\begin{adjustwidth}{\fivecharsapprox}{}
-\begin{lstlisting}[basicstyle=\fontencoding{T1}\small\ttfamily]
+\begin{lstlisting}[style=cstyle]
 typedef struct tagPROCESSENTRY32 {
   DWORD     dwSize;
   DWORD     cntUsage;
@@ -85,7 +82,6 @@ typedef struct tagPROCESSENTRY32 {
   TCHAR     szExeFile[MAX_PATH];
 } PROCESSENTRY32, *PPROCESSENTRY32;
 \end{lstlisting}
-\end{adjustwidth}
 \medskip
 
 Как видно из определения, предоставленный разработчиками системы интерфейс
@@ -123,8 +119,7 @@ Process Manager ведет список всех открытых процесс
 определение:
 
 \medskip
-\begin{adjustwidth}{\fivecharsapprox}{}
-\begin{lstlisting}[basicstyle=\fontencoding{T1}\small\ttfamily]
+\begin{lstlisting}[style=cstyle]
 TYPE ProcessInfoRec =
    RECORD
       processInfoLength:   LongInt;
@@ -142,7 +137,6 @@ TYPE ProcessInfoRec =
       processAppSpec:      FSSpecPtr;
    END;
 \end{lstlisting}
-\end{adjustwidth}
 \medskip
 
 В структуре водержится, имя и идентификатор процесса, тип и подпись процесса,
@@ -162,8 +156,7 @@ TYPE ProcessInfoRec =
 некоторых функций:
 
 \medskip
-\begin{adjustwidth}{\fivecharsapprox}{}
-\begin{lstlisting}[basicstyle=\fontencoding{T1}\small\ttfamily]
+\begin{lstlisting}[style=cstyle]
 int	proc_listpidspath(uint32_t	type,
 			  uint32_t	typeinfo,
 			  const char	*path,
@@ -184,7 +177,6 @@ int proc_pidfdinfo(int pid, int fd, int flavor,
 int proc_pidfileportinfo(int pid, uint32_t fileport,
         int flavor, void *buffer, int buffersize);
 \end{lstlisting}
-\end{adjustwidth}
 \medskip
 
 Такой подход является более устойчивым к изменениям внутренней архитектуры ядра,
@@ -238,8 +230,7 @@ PID\cite{understanding}. Каждая директория содержит от
 строки в Си), и размер:
 
 \medskip
-\begin{adjustwidth}{\fivecharsapprox}{}
-\begin{lstlisting}[basicstyle=\fontencoding{T1}\small\ttfamily]
+\begin{lstlisting}[style=cstyle]
 # cat /proc/2189/fdinfo/8
 pos:    0
 flags:  02004002
@@ -257,7 +248,6 @@ anon_inode:[timerfd]
 # readlink /proc/1329/fd/4
 /home/postskript/sec_domain.tex (deleted)
 \end{lstlisting}
-\end{adjustwidth}
 \medskip
 
 Элементы директории \texttt{/proc/\$PID/fdinfo/} также именуются номерами
