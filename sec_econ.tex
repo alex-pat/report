@@ -1,0 +1,463 @@
+\newcommand{\byr}{Byn}
+\clearpage
+\section{ТЕХНИКО-ЭКОНОМИЧЕСКОЕ ОБОСНОВАНИЕ}
+
+% Begin Calculations
+
+\FPeval{\totalProgramSize}{9810}
+\FPeval{\totalProgramSizeCorrected}{2760}
+
+\FPeval{\normativeManDays}{200}
+
+\FPeval{\additionalComplexity}{0.12}
+\FPeval{\complexityFactor}{clip(1 + \additionalComplexity)}
+
+\FPeval{\stdModuleUsageFactor}{0.7}
+\FPeval{\originalityFactor}{0.65}
+
+\FPeval{\adjustedManDaysExact}{clip( \normativeManDays * \complexityFactor * \stdModuleUsageFactor * \originalityFactor )}
+\FPround{\adjustedManDays}{\adjustedManDaysExact}{0}
+
+\FPeval{\daysInYear}{365}
+\FPeval{\redLettersDaysInYear}{9}
+\FPeval{\weekendDaysInYear}{104}
+\FPeval{\vocationDaysInYear}{21}
+\FPeval{\workingDaysInYear}{ clip( \daysInYear - \redLettersDaysInYear - \weekendDaysInYear - \vocationDaysInYear ) }
+
+\FPeval{\developmentTimeMonths}{3}
+\FPeval{\developmentTimeYearsExact}{clip(\developmentTimeMonths / 12)}
+\FPround{\developmentTimeYears}{\developmentTimeYearsExact}{2}
+\FPeval{\requiredNumberOfProgrammersExact}{ clip( \adjustedManDays / (\developmentTimeYears * \workingDaysInYear) + 0.5 ) }
+
+% тут должно получаться 2 ))
+\FPtrunc{\requiredNumberOfProgrammers}{\requiredNumberOfProgrammersExact}{0}
+
+\FPeval{\tariffRateFirst}{50}
+\FPeval{\tariffFactorFst}{3.04}
+\FPeval{\tariffFactorSnd}{3.48}
+
+
+\FPeval{\employmentFstExact}{clip( \adjustedManDays / \requiredNumberOfProgrammers )}
+\FPtrunc{\employmentFst}{\employmentFstExact}{0}
+
+\FPeval{\employmentSnd}{clip(\adjustedManDays - \employmentFst)}
+
+
+\FPeval{\workingHoursInMonth}{160}
+\FPeval{\salaryPerHourFstExact}{clip( \tariffRateFirst * \tariffFactorFst / \workingHoursInMonth )}
+\FPeval{\salaryPerHourSndExact}{clip( \tariffRateFirst * \tariffFactorSnd / \workingHoursInMonth )}
+\FPround{\salaryPerHourFst}{\salaryPerHourFstExact}{0}
+\FPround{\salaryPerHourSnd}{\salaryPerHourSndExact}{0}
+
+\FPeval{\bonusRate}{1.5}
+\FPeval{\workingHoursInDay}{8}
+\FPeval{\totalSalaryExact}{clip( \workingHoursInDay * \bonusRate * ( \salaryPerHourFst * \employmentFst + \salaryPerHourSnd * \employmentSnd ) )}
+\FPround{\totalSalary}{\totalSalaryExact}{0}
+
+\FPeval{\additionalSalaryNormative}{20}
+
+\FPeval{\additionalSalaryExact}{clip( \totalSalary * \additionalSalaryNormative / 100 )}
+\FPround{\additionalSalary}{\additionalSalaryExact}{0}
+
+\FPeval{\socialNeedsNormative}{0.6}
+\FPeval{\socialProtectionNormative}{34}
+\FPeval{\socialProtectionFund}{ clip(\socialNeedsNormative + \socialProtectionNormative) }
+
+\FPeval{\socialProtectionCostExact}{clip( (\totalSalary + \additionalSalary) * \socialProtectionFund / 100 )}
+\FPround{\socialProtectionCost}{\socialProtectionCostExact}{0}
+
+\FPeval{\taxWorkProtNormative}{4}
+\FPeval{\taxWorkProtCostExact}{clip( (\totalSalary + \additionalSalary) * \taxWorkProtNormative / 100 )}
+\FPround{\taxWorkProtCost}{\taxWorkProtCostExact}{0}
+\FPeval{\taxWorkProtCost}{0} % это считать не нужно, зануляем чтобы не менять формулы
+
+\FPeval{\stuffNormative}{3}
+\FPeval{\stuffCostExact}{clip( \totalSalary * \stuffNormative / 100 )}
+\FPeval{\stuffCost}{\stuffCostExact}
+
+\FPeval{\timeToDebugCodeNormative}{15}
+\FPeval{\reducingTimeToDebugFactor}{0.3}
+\FPeval{\adjustedTimeToDebugCodeNormative}{ clip( \timeToDebugCodeNormative * \reducingTimeToDebugFactor ) }
+
+\FPeval{\oneHourMachineTimeCost}{0.5}
+
+\FPeval{\machineTimeCostExact}{ clip( \oneHourMachineTimeCost * \totalProgramSizeCorrected / 100 * \adjustedTimeToDebugCodeNormative ) }
+\FPround{\machineTimeCost}{\machineTimeCostExact}{0}
+
+\FPeval{\businessTripNormative}{15}
+\FPeval{\businessTripCostExact}{ clip( \totalSalary * \businessTripNormative / 100 ) }
+\FPround{\businessTripCost}{\businessTripCostExact}{0}
+
+\FPeval{\otherCostNormative}{20}
+\FPeval{\otherCostExact}{clip( \totalSalary * \otherCostNormative / 100 )}
+\FPround{\otherCost}{\otherCostExact}{0}
+
+\FPeval{\overheadCostNormative}{100}
+\FPeval{\overallCostExact}{clip( \totalSalary * \overheadCostNormative / 100 )}
+\FPround{\overheadCost}{\overallCostExact}{0}
+
+\FPeval{\overallCost}{clip( \totalSalary + \additionalSalary + \socialProtectionCost + \taxWorkProtCost + \stuffCost + \machineTimeCost + \businessTripCost + \otherCost + \overheadCost ) }
+
+\FPeval{\supportNormative}{30}
+\FPeval{\softwareSupportCostExact}{clip( \overallCost * \supportNormative / 100 )}
+\FPround{\softwareSupportCost}{\softwareSupportCostExact}{0}
+
+
+\FPeval{\baseCost}{ clip( \overallCost + \softwareSupportCost ) }
+
+\FPeval{\profitability}{35}
+\FPeval{\incomeExact}{clip( \baseCost / 100 * \profitability )}
+\FPround{\income}{\incomeExact}{0}
+
+\FPeval{\estimatedPrice}{clip( \income + \baseCost )}
+
+\FPeval{\localRepubTaxNormative}{3.9}
+\FPeval{\localRepubTaxExact}{clip( \estimatedPrice * \localRepubTaxNormative / (100 - \localRepubTaxNormative) )}
+\FPround{\localRepubTax}{\localRepubTaxExact}{0}
+\FPeval{\localRepubTax}{0}
+
+\FPeval{\ndsNormative}{20}
+\FPeval{\ndsExact}{clip( (\estimatedPrice + \localRepubTax) / 100 * \ndsNormative )}
+\FPround{\nds}{\ndsExact}{0}
+
+
+\FPeval{\sellingPrice}{clip( \estimatedPrice + \localRepubTax + \nds )}
+
+\FPeval{\taxForIncome}{0}
+\FPeval{\incomeWithTaxes}{clip(\income * (1 - \taxForIncome / 100))}
+\FPround\incomeWithTaxes{\incomeWithTaxes}{0}
+
+% End Calculations
+
+\subsection{Краткая характеристика программного продукта}
+
+Целью дипломного проекта является разработка системы получения данных о
+процессах и файловых дескрипторах процессов для операционной системы Linux.
+Данная система призвана заменить существующую файловую систему \texttt{procfs}.
+Сбор описанной информации является актуальной задачей в процессах мониторинта
+состояния, производительности и нагрузки системы. Ввиду того, что программный
+продукт обеспечивает меньшую нагрузку на систему и более быстрое выполнение,
+обеспечится прирост прибыли за счет экономии расходов на заработную плату в
+результате снижения трудоемкости будущих проектов.
+
+\subsection{Расчет затрат на зарзаботку программного продукта}
+
+Оценка стоимости создания ПО со стороны разработчика предполагает составление
+сметы затрат, которая включает следующие статьи расходов:
+\begin{itemize}
+\item основную заработную плату исполнителей ($ \text{З}_{\text{o}} $);
+\item дополнительную заработную плату исполнителей ($\text{З}_{\text{д}} $);
+\item отчисления на социальные нужды ($ \text{З}_\text{сн} $);
+\item прочее (машинное время, накладные расходы, расходы на сопровождение и
+  адаптацию).
+\end{itemize}
+
+Основная заработная плата исполнителей на конкретное ПО рассчитывается по
+формуле:
+\begin{equation}
+  \label{eq:econ:total_salary}
+  \text{З}_{\text{о}} = \text{K}_{\text{пр}} \cdot
+                        \sum^{n}_{i = 1}
+                        \text{З}_{\text{ч}}^{i} \cdot
+                        \text{t}_{\text{i}}
+                          \text{\,,}
+\end{equation}
+\begin{explanation}
+где & $ \text{n} $ & количество исполнителей;\\
+    & $ \text{З}_{\text{ч}}^{i} $ & часовая заработная плата \mbox{$ i $-го}
+    исполнителя, \byr$/$час; \\
+    & $ \text{t}_{\text{i}} $ & трудоемкость работ, выполняемых \mbox{$ i $-ым}
+    исполнителем; \\
+    & $ \text{К}_{\text{пр}} $ & коэффициент премирования (1.5 - 2.0).
+\end{explanation}
+
+Информация о работниках перечислена в таблице~\ref{table:econ:programmers}.
+\begin{table}[ht]
+  \caption{Работники, занятые в проекте}
+  \label{table:econ:programmers}
+  \begin{tabular}{| >{\centering}m{0.20\textwidth}
+                  | >{\centering}m{0.16\textwidth}
+                  | >{\centering}m{0.12\textwidth}
+                  | >{\centering}m{0.11\textwidth}
+                  | >{\centering}m{0.11\textwidth}
+                  | >{\centering\arraybackslash}m{0.15\textwidth}|}
+   \hline
+   Исполнитель & Вид работ & Месячная зарплата по тарифу, BYN & Часовая зарплата по тарифу, BYN & Трудо-емкость работ, ч & Зарплата по тарифу, BYN\\ 
+   \hline
+   Программист & Разработка & $ 600 $ & $ 3.57 $ & $ 336 $  & $ 1200 $\\
+   \hline
+   Ведущий программист &  Руководство  & $ 2500 $ & $ 11.9 $ & $ 168 $ & $ 2000 $\\
+   \hline
+    \multicolumn{5}{|c|}{ Премия, \%  } & $ 50 $\\
+    \hline
+    \multicolumn{5}{|c|}{ Итого на заработную плату работников, BYN  } & $ 4800 $\\
+    \hline
+  \end{tabular}
+\end{table}
+
+Часовая заработная плата определяется путем деления месячной заработной платы на
+количество рабочих часов в месяце. Подставив ранее вычисленные значения и даные
+из таблицы таблицы~\ref{table:econ:programmers} в
+формулу~(\ref{eq:econ:total_salary}) и приняв коэффициент премирования
+$ \text{К}_{\text{пр}} = \num{\bonusRate} $ получим:
+\begin{equation}
+  \label{eq:econ:total_salary_calc}
+  \text{З}_{\text{о}} = (\num{3.57} \times \num{336} + \num{11.9} \times \num{168}) \times \num{\bonusRate} = \num{4800} {\text{ \byr}} \text{\,.}
+\end{equation}
+
+Дополнительная заработная плата включает выплаты предусмотренные
+законодательством от труде и определяется по нормативу в процентах от основной
+заработной платы:
+\begin{equation}
+  \label{eq:econ:additional_salary}
+  \text{З}_{\text{д}} = 
+    \frac {\text{З}_{\text{о}} \cdot \text{Н}_{\text{д}}} 
+          {100\%} \text{\,,}
+\end{equation}
+\begin{explanation}
+  где & $ \text{Н}_{\text{д}} $ & норматив дополнительной заработной платы, $ \% $.
+\end{explanation}
+
+Приняв норматив дополнительной заработной платы
+$ \text{Н}_{\text{д}} = \num{\additionalSalaryNormative\%} $ и подставив
+известные данные в формулу~(\ref{eq:econ:additional_salary}) получим:
+\begin{equation}
+  \label{eq:econ:additional_salary_calc}
+  \text{З}_{\text{д}} = 
+    \frac{\num{4800} \times 20\%}
+         {100\%} \approx \num{960}{\text{ \byr}} \text{\,.}
+\end{equation}
+
+Согласно действующему законодательству отчисления в фонд социальной защиты
+населения составляют \num{\socialProtectionNormative\%} , в фонд обязательного
+страхования~--- \num{\socialNeedsNormative\%}, от фонда основной и
+дополнительной заработной платы исполнителей. Общие отчисления на социальную
+защиту рассчитываются по формуле:
+\begin{equation}
+  \label{eq:econ:soc_prot}
+  \text{З}_{\text{сз}} = 
+    \frac{(\text{З}_{\text{о}} + \text{З}_{\text{д}}) \cdot \text{Н}_{\text{сз}}}
+         {\num{100\%}} \text{\,.}
+\end{equation}
+
+Подставив вычисленные ранее значения в формулу~(\ref{eq:econ:soc_prot}) получаем
+\begin{equation}
+  \label{eq:econ:soc_prot_calc}
+  \text{З}_{\text{сз}} =
+    \frac{ (\num{4800} + \num{\additionalSalary}) \times \num{\socialProtectionFund\%} }
+         { \num{100\%} }
+    \approx \num{1745}{\text{ \byr}} \text{\,.}
+\end{equation}
+
+\begin{comment}
+  Расчет налогов от фонда оплаты труда производится формуле
+  \begin{equation}
+    \label{eq:econ:tax_work_prot}
+    \text{Н}_{\text{е}} = 
+      \frac{(\text{З}_{\text{о}} + \text{З}_{\text{д}}) \cdot \text{Н}_{\text{не}}}
+           {\num{100\%}} \text{\,,}
+  \end{equation}
+  \begin{explanation}
+    где & $ \text{Н}_{\text{не}} $ & норматив налога, уплачиваемый единым платежом, $ \% $.
+  \end{explanation}
+
+Подставив ранее вычисленные значения в формулу~(\ref{eq:econ:tax_work_prot}) и
+приняв норматив налога $ \text{Н}_{\text{не}} = \num{\taxWorkProtNormative\%} $
+получаем
+  \begin{equation}
+    \label{eq:econ:tax_work_prot_calc}
+    \text{Н}_{\text{е}} = 
+        \frac{ (\num{4800} + \num{\additionalSalary}) \times \num{\taxWorkProtNormative\%} }
+           { \num{100\%} }
+      \approx \SI{\taxWorkProtCost}{\text{\byr}}\text{\,.}
+  \end{equation}
+\end{comment}
+
+Статья расходов <<прочие затраты>> включает в себя расходы на приобретение и
+подготовку специальной научно-технической  и специальной литературы. Затраты
+определяются по нормативу принятому в организации в процентах от основной
+заработной платы и вычисляются по формуле
+\begin{equation}
+  \label{eq:econ:other_cost}
+  \text{П}_{\text{з}} =
+    \frac{ \text{З}_{\text{о}} \cdot \text{Н}_{\text{пз}} }
+         { \num{100\%} } \text{\,,}
+\end{equation}
+\begin{explanation}
+  где & $ \text{Н}_{\text{пз}} $ & норматив прочих затрат в целом по организации, $ \% $.
+\end{explanation}
+
+Приняв значение норматива прочих затрат
+$ \text{Н}_{\text{пз}} = \num{50\%} $ и подставив вычисленные
+ранее значения в формулу~(\ref{eq:econ:other_cost}) получаем
+\begin{equation}
+  \label{eq:econ:other_cost_calc}
+  \text{П}_{\text{з}} =
+    \frac{ \num{4800} \times \num{50\%} }
+         { \num{100\%} } = 
+    \num{2400}{\text{ \byr}} \text{\,.}
+\end{equation}
+
+Общая ct рассчитывается по формуле
+\begin{equation}
+  \label{eq:econ:overall_cost}
+  \text{С}_{\text{П}} =
+    \text{З}_{\text{о}} +
+    \text{З}_{\text{д}} +
+    \text{З}_{\text{сз}} +
+    \text{Р}_{\text{н}}\text{\,.}
+\end{equation}
+
+Подставляя ранее вычисленные значения в формулу~(\ref{eq:econ:overall_cost})
+получаем
+
+\begin{equation}
+  \label{eq:econ:overall_cost_calc}
+  \text{С}_{\text{П}} = \num{10147}{\text{ \byr}} \text{\,.}
+\end{equation}
+
+\subsection{Расчет экономической эффективности}
+
+Программный продукт разрабатывается для субственных нужд. Внедрение проекта
+позволит оптимизировать существующие затраты операционной системы, применяя его
+в новых проектах. Кроме того, это позводит сократить время разработки будущих
+проектов.
+
+Экономия затрат на заработкую плату при использовании программного продукта в
+расчете на объем выполняемых работ рассчитывается по формуле:
+\begin{equation}
+  \label{eq:econ:zarplt}
+  \text{Э}_{\text{з}} =
+  \text{K}_{\text{пр}} \cdot
+  (\text{t}_{\text{c}} - \text{t}_{\text{н}}) \cdot
+  \text{T}_{\text{ч}} \cdot
+  \text{N}_{\text{п}} \cdot
+  \text{N}_{\text{п}} \cdot
+  (1 + \frac{\text{Н}_{\text{д}}}{100}) \cdot
+  (1 + \frac{\text{Н}_{\text{но}}}{100}) \text{\,,}
+\end{equation}
+\begin{explanation}
+  где & $ \text{N}_{\text{п}} $ & плановый объем работ; \\
+      & $ \text{t}_{\text{c}}, \text{t}_{\text{н}} $ & трудоемкость выполнения
+      работы до и после внедрения программного продукта, нормо-час; \\
+      & $ \text{T}_{\text{ч}} $ & часовая тарифная ставка, соответствующая
+      разряду выполняемых работ, руб./ч (3,57 руб./ч.); \\ 
+      & $ \text{K}_{\text{пр}} $ & коэффициент премий (1,5); \\
+      & $ \text{Н}_{\text{д}} $ & норматив дополнительной заработной платы (10\%); \\ 
+      & $ \text{Н}_{\text{но}} $ & ставка отчислений от заработной платы,
+      включаемых в себестоимость (34,6\%). \\
+\end{explanation}
+
+Экономия на заработной плате и начислениях на заработную плату составят: 
+\begin{equation}
+  \text{Э}_{\text{з}} = 1,5 \times (1 - 0,94) \times 3,57) \times
+  1000 \times 12 \times 1,5 \times 1,346 \approx 7784 \text{ Byn} \text{\,.}
+\end{equation}
+
+Прирост чистой прибыли равен экономии на заработной плате и начислениях на
+заработную плату с вычетом налога на прибыль, равного 18\%:
+\begin{equation}
+  \Delta\text{П}_{\text{ч}} = 7784 \times (\num{100\%} - \num{18\%}) \approx \num{6383} \text{ Byn}\text{\,.}
+\end{equation}
+
+\subsection{Расчет показателей эффективности использования программного продукта}
+
+Для расчета показателей экономической эффективности использования данного
+проекта необходимо полученные суммы прироста чистой прибыли и капитальных
+вложений по годам привести к единому времени~--- расчетному году~--- путем
+умножения прироста чистой прибыли и затрат за каждый год на коэффициент
+привидения ALFAt, расчитываемый по формуле:
+\begin{equation}
+  \text{ALFA}_{\text{t}} = (1 + \text{E}_{\text{H}})^{\text{t}_\text{p}-\text{t}} \text{\,,}
+\end{equation}
+\begin{explanation}
+  где & $ \text{E}_{\text{H}} $ & норматив приведения разновременных затрат и
+  результатов, 25\%; \\
+      & $ \text{t}_{\text{p}} $ & расчетный год; \\
+      & $ \text{T}_{\text{ч}} $ & часовая тарифная ставка, соответствующая
+      разряду выполняемых работ, руб./ч (3,57 руб./ч.); \\ 
+      & $ \text{t} $ & номер года, результаты и затраты которого приводятся к
+      расчетному (2018 – 1, 2019 – 2, 2020 – 3).\\ 
+\end{explanation}
+
+Подставив в формулу соответствующие значения, получим результат для следующих
+трех лет:
+\begin{equation}
+  \text{ALFA}_{\text{1}} = (1 + 0,25)^{(1-1)} = 1 \text{\,.}
+\end{equation}
+\medskip
+\begin{equation}
+  \text{ALFA}_{\text{2}} = (1 + 0,25)^{(1-2)} = 0,8 \text{\,.}
+\end{equation}
+\bigskip
+\begin{equation}
+  \text{ALFA}_{\text{3}} = (1 + 0,25)^{(1-3)} = 0,64\text{\,.}
+\end{equation}
+
+Рассчитанная выше экономия будет достигнута за год использования программного
+продукта. В компании запланировано использование системы в 2018 году, поэтому
+прибыль за этот год будет в два раза меньше. 
+
+В таблице~\ref{table:econ:calculated_data} приведены результаты расчета
+показателей эффективности. Рентабельность инвестиций в разработку и внедрение
+считается при помощи следующей формулы:
+\begin{equation}
+  \text{Р}_{\text{И}} = \frac{\text{П}_{\text{чср}} \cdot \num{100\%}}{\text{З}}\text{\,.}
+\end{equation}
+
+Среднегодовая величина чистой прибыли за расчетный период определяется по
+формуле:
+
+\begin{equation}
+  \text{П}_{\text{чср}} = \frac{\sum_{i=1}^n \text{П}_{\text{чi}}}{\text{З}}\text{\,.}
+\end{equation}
+
+\begin{table}
+\caption{Результат расчета показателей эффективности}
+\label{table:econ:calculated_data}
+  \begin{tabular}{| >{\raggedright}m{0.47\textwidth} 
+                  | >{}m{0.13\textwidth} 
+                  | >{}m{0.13\textwidth} 
+                  | >{\arraybackslash}m{0.13\textwidth}|}
+    \hline
+    Показатели & 2018 & 2019 & 2020 \\
+
+    \hline
+    Прирост прибыли за счет экономии затрат & 3892 & 6383 & 6383 \\
+
+    \hline
+    Коэффициент дисконтирования & 1 & 0,8 & 0,64 \\
+
+    \hline
+    Результат с учетом фактора времени & 3245 & 6227 & 4981 \\
+
+    \hline
+    Инвестиции в разработку & 10147 & - & - \\
+
+    \hline
+    Инвестиции с учетом фактора времени & 10147 & - & - \\
+
+    \hline
+    Чистый дисконтный доход & (6902) & 6227 & 4981 \\
+
+    \hline
+    ЧДД нарастающим итогом & (6902) & 675 & 4306 \\
+
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{equation}
+  \text{П}_{\text{Ч}} = \frac{3892 + 6383 + 6383}{\text{З}} = 5553 \text{ BYN}\text{\,.}
+\end{equation}
+
+Таким образом, рентабельность инвестиций в разработку данного программного
+продукта будет равна:
+\begin{equation}
+  \text{P}_{\text{И}} = \frac{5553 \cdot 100\%}{10147} = 0,54\% \text{\,.}
+\end{equation}
+
+В результате технико-экономического обоснования применения программного продукта
+были получены значения показателей эффективности. Полученные данные показывают,
+что применение программного продукта является эффективным и инвестиции в его
+разработку целесообразны.
