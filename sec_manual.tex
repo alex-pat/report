@@ -1,2 +1,99 @@
 \section{РУКОВОДСТВО ПОЛЬЗОВАТЕЛЯ}
 \label{sec:manual}
+
+Разработанные системные вызовы представляют собой набор патчей на языке Си, при
+необходимости прикладываемых к ядру. Пользователь может как использовать готорые
+примеры прикладных программ, так и пользоваться новыми системными вызовами
+напрямую.
+
+\subsection{Требования к аппаратному и программному обеспечению}
+
+Минимальные требования для сборки и функционирования модифицированного ядра:
+\begin{itemize}
+\item GNU C 3.2;
+\item GNU make 3.81;
+\item binutils 2.20;
+\item flex 2.5.35;
+\item bison 2.0;
+\item util-linux 2.10o;
+\item module-init-tools 0.9.10;
+\item e2fsprogs 1.41.4;
+\item jfsutils 1.1.3;
+\item reiserfsprogs 3.6.3;
+\item xfsprogs 2.6.0;
+\item squashfs-tools 4.0;
+\item btrfs-progs 0.18;
+\item pcmciautils 004;
+\item quota-tools 3.09;
+\item PPP 2.4.0;
+\item isdn4k-utils 3.1pre1;
+\item nfs-utils 1.0.5;
+\item procps 3.2.0;
+\item oprofile 0.9;
+\item udev 081;
+\item grub 0.93;
+\item mcelog 0.6;
+\item iptables 1.4.2;
+\item openssl \& libcrypto 1.0.0;
+\item bc 1.06.95;
+\item XZ Utils 5.0;
+\item tar 1.20;
+\item процессор совместимый с Intel i386;
+\item свободное место на жестком диске 350 Мб;
+\item оперативная память 512 Mб.
+\end{itemize}
+
+\subsection{Руководство по сборке и запуску программного средства}
+
+Перед сборкой и установной ядра необходимо получить соответствующие исходные
+коды, распаковав архив с необходимой версией ядра и приложив к ней патчи:
+
+\medskip
+\begin{lstlisting}[style=cstyle]
+$ tar xf linux-4.14.2.tar.xz
+$ cd linux-4.14.2
+$ patch -p1 < pateenok.patch
+$ patch -p1 < brouka.patch
+\end{lstlisting}
+\medskip
+
+При необходимости можно использовать другие версии ядра, которые доступны на
+сайте \texttt{https://www.kernel.org/}. Далее необходимо проконфигурировать
+ядро. Одни из наиболее простых вариантов~--- использование конфигурации текущей
+системы или стандартной конфигурации текущей архитектуры. При этом полезно
+создать отдельную директорию для файлов сборки:
+
+\medskip
+\begin{lstlisting}[style=cstyle]
+$ mkdir ../obj/
+$ cp /boot/config-$(uname -r) ../obj/.config
+$ # make O=../obj defconfig
+\end{lstlisting}
+\medskip
+
+Конфигурация ядра может производиться несколькими способами, при этом важно
+включить параметры \texttt{CONFIG\_PIDMAP} и \texttt{CONFIG\_FDMAP}:
+\begin{itemize}
+\item \texttt{make O=../obj config}~--- простой текстовый интерфейс, спрашивающий о
+  каждой конфигурационной опции;
+\item \texttt{make O=../obj menuconfig}~--- псевдографический интерфейс на базе Ncurses;
+\item \texttt{make O=../obj xconfig}~--- графический интерфейс на базе Qt;
+\item \texttt{make O=../obj gconfig}~--- графический интерфейс на GTK+;
+\item \texttt{make O=../obj oldconfig}~--- текстовый интерфейс, берет за основу
+  конфигурацию в \texttt{.config}, спрашивая только о новых конфигурационных параметрах.
+\end{itemize}
+
+После конфигурации можно приступить к конфигурации ядра:
+\medskip
+\begin{lstlisting}[style=cstyle]
+$ make O=../obj -j4
+\end{lstlisting}
+\medskip
+
+После установки необходимо установить ядро в систему:
+\medskip
+\begin{lstlisting}[style=cstyle]
+$ sudo make O=../obj install
+$ sudo make O=../obj modules_install
+\end{lstlisting}
+\medskip
