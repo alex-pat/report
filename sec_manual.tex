@@ -47,14 +47,13 @@
 \subsection{Руководство по сборке и запуску программного средства}
 
 Перед сборкой и установной ядра необходимо получить соответствующие исходные
-коды, распаковав архив с необходимой версией ядра и приложив к ней патчи:
+коды, распаковав архив с необходимой версией ядра и приложив к ней патч:
 
 \medskip
 \begin{lstlisting}[style=cstyle]
 $ tar xf linux-4.14.2.tar.xz
 $ cd linux-4.14.2
-$ patch -p1 < pateenok.patch
-$ patch -p1 < brouka.patch
+$ patch -p1 < syscalls.patch
 \end{lstlisting}
 \medskip
 
