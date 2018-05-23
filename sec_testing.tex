@@ -104,9 +104,54 @@
 меры по уменьшению влияния на результат внешних факторов. Пример ключевого
 фрагмента одной из таких программ показан нижу, а результат работы изображен на
 рисунке \ref{fig:microbench}.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{microbench.png}
+  \caption{Результаты измерения производительности вызовов}
+  \label{fig:microbench}
+\end{figure}
+
 \medskip
 \begin{lstlisting}[style=cstyle]
-// code
+int main(int argc, char *argv[])
+{
+	/* decls */
+	fd = open(".", O_RDONLY);
+	if (fd == -1) {
+		perror("open");
+		return 1;
+	}
+
+	/* /proc/ time */
+
+	gettimeofday(&start, NULL);
+	for (i = 0; i < count; i++)
+		readlink_syscalls(fd);
+	gettimeofday(&end, NULL);
+	syscall_result = ((end.tv_sec  - start.tv_sec) * 1000000
+			 + end.tv_usec - start.tv_usec) / (float) count;
+
+	speedup = (float) (proc_result / syscall_result - 1.) * 100;
+
+	printf("sys_pidfdinfo() mean time\t%.4f ms\n"
+		"\tSpeedup: %.2f%%\n",
+		syscall_result, speedup);
+
+	close(fd);
+	return 0;
+}
+
+/* readlink_proc impelentation */
+
+inline void readlink_syscalls(int fd)
+{
+	char fibuf[PAGE];
+	struct fdinfo *fi = (void *) fibuf;
+
+	if (syscall(__NR_pidfdinfo, 0, fd, fi, PAGE) < 0)
+		perror("pidfdinfo");
+}
 \end{lstlisting}
 \medskip
 
@@ -118,7 +163,14 @@
 системы вместо бинарных вызовов, поэтому этим можно возпользоваться. Полученные
 результаты показаны на рисунке \ref{fig:time}.
 
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{time.png}
+  \caption{Результат применения бинарных вызовов}
+  \label{fig:time}
+\end{figure}
+
 Таким образом, использование в пользовательских программах разработанных в
 дипломном проекте системных вызовов дает ощутимый прирост производительности, в
 разработанных тестовых программах только получение информации ускоряется на
-???\%, а в целом время работы типичной программы уменьшается в 6 раз.
+500\%-10000\%, а в целом время работы типичной программы уменьшается в 6 раз.
