@@ -10,14 +10,8 @@ all: $(DIPLOMA_REPORT_PDF).pdf $(PRACTICE_REPORT_PDF).pdf
 fast: *.tex
 	latexmk -pdf -pdflatex="pdflatex" $(DIPLOMA_REPORT_PDF)
 
-fastcheck: *.tex
-	$(PDFLATEX) $(DIPLOMA_REPORT_PDF)
-	$(BIBTEX) $(DIPLOMA_REPORT_PDF).aux
-	$(PDFLATEX) $(DIPLOMA_REPORT_PDF)
-	$(PDFLATEX) $(DIPLOMA_REPORT_PDF)
 
-
-$(DIPLOMA_REPORT_PDF).pdf: *.tex *.bib
+$(DIPLOMA_REPORT_PDF).pdf: *.tex *.bib syscalls.patch
 	$(PDFLATEX) $(DIPLOMA_REPORT_PDF)
 	$(BIBTEX) $(DIPLOMA_REPORT_PDF).aux
 	$(PDFLATEX) $(DIPLOMA_REPORT_PDF)

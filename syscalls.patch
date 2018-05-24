@@ -1,17 +1,15 @@
 diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
-index 5aef183e2f85..43775dbf25aa 100644
+index 5aef183e2f85..1f661cfb6b00 100644
 --- a/arch/x86/entry/syscalls/syscall_64.tbl
 +++ b/arch/x86/entry/syscalls/syscall_64.tbl
-@@ -339,6 +339,13 @@
+@@ -339,6 +339,11 @@
  330	common	pkey_alloc		sys_pkey_alloc
  331	common	pkey_free		sys_pkey_free
  332	common	statx			sys_statx
 +333	common	pidfdopen		sys_pidfdopen
- 334	common	map_readlink		sys_map_readlink
 +335	common	pidfdinfo		sys_pidfdinfo
 +336	common	fdmap			sys_fdmap
 +337	common	pidmap			sys_pidmap
- 338	common	map_open		sys_map_open
 +339	common	pidinfo			sys_pidinfo
  
  #
@@ -144,7 +142,7 @@ index 4eecbf4244a5..003fc37e8c3e 100644
 +}
 +#endif
 diff --git a/fs/open.c b/fs/open.c
-index 7ea118471dce..72eb58a18dac 100644
+index 7ea118471dce..4667ab82bc23 100644
 --- a/fs/open.c
 +++ b/fs/open.c
 @@ -31,6 +31,7 @@
@@ -155,7 +153,7 @@ index 7ea118471dce..72eb58a18dac 100644
  
  #include "internal.h"
  
-@@ -1206,3 +1207,308 @@ int nonseekable_open(struct inode *inode, struct file *filp)
+@@ -1206,3 +1207,223 @@ int nonseekable_open(struct inode *inode, struct file *filp)
  }
  
  EXPORT_SYMBOL(nonseekable_open);
@@ -293,10 +291,14 @@ index 7ea118471dce..72eb58a18dac 100644
 +	size_t path_size = 0, writed_size = 0;
 +	char *buf, *path;
 +
-+	if (fd < 0 || pid < 1)
++	if (fd < 0 || pid < 0)
 +		return -EINVAL;
 +
 +	rcu_read_lock();
++	if (pid == 0) {
++		task = current;
++		goto get_files;
++	}
 +	task = find_task_by_vpid(pid);
 +	if (!task) {
 +		rcu_read_unlock();
@@ -306,6 +308,7 @@ index 7ea118471dce..72eb58a18dac 100644
 +		rcu_read_unlock();
 +		return -EACCES;
 +	}
++get_files:
 +	files = get_files_struct(task);
 +	if (!files) {
 +		rcu_read_unlock();
@@ -375,20 +378,18 @@ index 7ea118471dce..72eb58a18dac 100644
 +	return writed_size;
 +}
 diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index a78186d826d7..522d95995810 100644
+index a78186d826d7..8baf8bc41041 100644
 --- a/include/linux/syscalls.h
 +++ b/include/linux/syscalls.h
-@@ -80,6 +80,9 @@ union bpf_attr;
+@@ -80,6 +80,7 @@ union bpf_attr;
  #include <linux/quota.h>
  #include <linux/key.h>
  #include <trace/syscall.h>
 +#include <linux/taskinfo.h>
-+#include <linux/credinfo.h>
-+#include <linux/vminfo.h>
  
  /*
   * __MAP - apply a macro to syscall arguments
-@@ -940,5 +943,39 @@ asmlinkage long sys_pkey_alloc(unsigned long flags, unsigned long init_val);
+@@ -940,5 +941,22 @@ asmlinkage long sys_pkey_alloc(unsigned long flags, unsigned long init_val);
  asmlinkage long sys_pkey_free(int pkey);
  asmlinkage long sys_statx(int dfd, const char __user *path, unsigned flags,
  			  unsigned mask, struct statx __user *buffer);
@@ -409,10 +410,33 @@ index a78186d826d7..522d95995810 100644
 +			   unsigned int pids_count,
 +			   unsigned int start_pid,
 +			   int flags);
-+
- asmlinkage long sys_credinfo(pid_t pid,
- 			     struct credinfo __user *buffer,
- 			     unsigned int size,
+ 
+ #endif
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index 8b87de067bc7..6bb4ccae8ade 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -732,9 +732,19 @@ __SYSCALL(__NR_pkey_alloc,    sys_pkey_alloc)
+ __SYSCALL(__NR_pkey_free,     sys_pkey_free)
+ #define __NR_statx 291
+ __SYSCALL(__NR_statx,     sys_statx)
++#define __NR_pidfdopen 292
++__SYSCALL(__NR_pidfdopen, sys_pidfdopen)
++#define __NR_pidfdinfo 294
++__SYSCALL(__NR_pidfdinfo, sys_pidfdinfo)
++#define __NR_fdmap 295
++__SYSCALL(__NR_fdmap, sys_fdmap)
++#define __NR_pidmap 296
++__SYSCALL(__NR_pidmap, sys_pidmap)
++#define __NR_pidinfo 298
++__SYSCALL(__NR_pidinfo, sys_pidinfo)
+ 
+ #undef __NR_syscalls
+-#define __NR_syscalls 292
++#define __NR_syscalls 301
+ 
+ /*
+  * All syscalls below here should go away really,
 diff --git a/include/uapi/linux/taskinfo.h b/include/uapi/linux/taskinfo.h
 new file mode 100644
 index 000000000000..1287d5497a0d
@@ -510,10 +534,10 @@ index 3c1faaa2af4a..2f3584bbcbaf 100644
  	bool
  	help
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 172d151d429c..4543ad2f0eb7 100644
+index 172d151d429c..69a27cb490f4 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
-@@ -101,6 +103,7 @@ obj-$(CONFIG_TRACEPOINTS) += trace/
+@@ -101,6 +101,7 @@ obj-$(CONFIG_TRACEPOINTS) += trace/
  obj-$(CONFIG_IRQ_WORK) += irq_work.o
  obj-$(CONFIG_CPU_PM) += cpu_pm.o
  obj-$(CONFIG_BPF) += bpf/
@@ -523,10 +547,10 @@ index 172d151d429c..4543ad2f0eb7 100644
  
 diff --git a/kernel/pidmap.c b/kernel/pidmap.c
 new file mode 100644
-index 000000000000..d984ad17577c
+index 000000000000..0b286c341053
 --- /dev/null
 +++ b/kernel/pidmap.c
-@@ -0,0 +1,350 @@
+@@ -0,0 +1,349 @@
 +#include <linux/bitops.h>
 +#include <linux/cred.h>
 +#include <linux/kernel.h>
@@ -853,9 +877,8 @@ index 000000000000..d984ad17577c
 +
 +	rcu_read_unlock();
 +
-+	tinfo.state = __get_task_state(task); /* currently the same */
-+	/* note: __get_task_state is task_state_index in newer kernel */
-+	tinfo.pid = pid;	/* is needed? */
++	tinfo.state = __get_task_state(task);
++	tinfo.pid = pid;
 +
 +	if (lock_task_sighand(task, &flags)) {
 +		u64 utime = 0, stime = 0;
@@ -878,7 +901,7 @@ index 000000000000..d984ad17577c
 +	return copy_to_user(buffer, &tinfo, sizeof(tinfo));
 +}
 diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index b5189762d275..8b6ab507627d 100644
+index b5189762d275..62e0979f8a22 100644
 --- a/kernel/sys_ni.c
 +++ b/kernel/sys_ni.c
 @@ -259,3 +259,9 @@ cond_syscall(sys_membarrier);
@@ -887,12 +910,393 @@ index b5189762d275..8b6ab507627d 100644
  cond_syscall(sys_pkey_free);
 +
 +cond_syscall(sys_pidfdopen);
- cond_syscall(sys_map_readlink);
 +cond_syscall(sys_pidfdinfo);
 +cond_syscall(sys_fdmap);
 +cond_syscall(sys_pidmap);
++cond_syscall(sys_pidinfo);
+diff --git a/samples/Makefile b/samples/Makefile
+index db54e766ddb1..7604e4242ed3 100644
+--- a/samples/Makefile
++++ b/samples/Makefile
+@@ -3,4 +3,4 @@
+ obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ livepatch/ \
+ 			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/ \
+ 			   configfs/ connector/ v4l/ trace_printk/ blackfin/ \
+-			   vfio-mdev/ statx/
++			   vfio-mdev/ statx/ taskinfo/
+diff --git a/samples/taskinfo/.gitignore b/samples/taskinfo/.gitignore
+new file mode 100644
+index 000000000000..3055dab099da
+--- /dev/null
++++ b/samples/taskinfo/.gitignore
+@@ -0,0 +1,3 @@
++lsof
++readlink-bench
++pidmap-bench
+diff --git a/samples/taskinfo/Makefile b/samples/taskinfo/Makefile
+new file mode 100644
+index 000000000000..4d52b96cd11a
+--- /dev/null
++++ b/samples/taskinfo/Makefile
+@@ -0,0 +1,12 @@
++# kbuild trick to avoid linker error. Can be omitted if a module is built.
++obj- := dummy.o
++
++# List of programs to build
++hostprogs-$(CONFIG_PIDMAP) := lsof readlink-bench pidmap-bench
++
++# Tell kbuild to always build the programs
++always := $(hostprogs-y)
++
++HOSTCFLAGS_lsof.o += -I$(objtree)/usr/include
++HOSTCFLAGS_readlink-bench.o += -I$(objtree)/usr/include
++HOSTCFLAGS_pidmap-bench.o += -I$(objtree)/usr/include
+diff --git a/samples/taskinfo/lsof.c b/samples/taskinfo/lsof.c
+new file mode 100644
+index 000000000000..ac142df0c2d4
+--- /dev/null
++++ b/samples/taskinfo/lsof.c
+@@ -0,0 +1,132 @@
++#define _GNU_SOURCE
++#include <stdio.h>
++#include <stdlib.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <dirent.h>
++#include <string.h>
++#include <unistd.h>
++#include <sys/syscall.h>
++#include <sys/time.h>
++#include <linux/taskinfo.h>
++
++#define SIZE	64
++
++int lsof_proc(int argc, char *argv[]);
++int lsof_syscalls(int argc, char *argv[]);
++
++int main(int argc, char *argv[])
++{
++	if (argc > 1 && !strcmp(argv[1], "--proc"))
++		return lsof_proc(argc, argv);
++	else
++		return lsof_syscalls(argc, argv);
++}
++
++int lsof_proc(int argc, char *argv[])
++{
++	DIR *dir = opendir("/proc");
++	struct dirent* dirs;
++
++	puts("NAME\tPID\tFD\tPOS\tPATH");
++	while ((dirs = readdir(dir))) {
++		char fdpath[SIZE] = "";
++		DIR *f = NULL;
++		struct dirent *fdd;
++		int pid, r, fcomm;
++		char comm[SIZE];
++
++		if (dirs->d_name[0] < '0' || dirs->d_name[0] > '9')
++			continue;
++		pid = atoi(dirs->d_name);
++
++		snprintf(comm, SIZE, "/proc/%d/comm", pid);
++		fcomm = open(comm, O_RDONLY);
++		memset(comm, 0, SIZE);
++		r = read(fcomm, comm, 16);
++		comm[r - 1] = '\0';
++		close(fcomm);
++
++		snprintf(fdpath, SIZE, "/proc/%d/fd", pid);
++		f = opendir(fdpath);
++		if (!f)
++			continue;
++		while ((fdd = readdir(f))) {
++			int fd;
++			char realpath[SIZE];
++			long long pos;
++			char fpath[SIZE];
++			FILE *fi;
++
++			if (fdd->d_name[0] < '0' || fdd->d_name[0] > '9')
++				continue;
++			fd = atoi(fdd->d_name);
++			snprintf(fpath, SIZE, "/proc/%d/fd/%d", pid, fd);
++			pos = readlink(fpath, realpath, SIZE);
++			if (pos < 0)
++				continue;
++			realpath[pos] = '\0';
++
++			snprintf(fpath, SIZE, "/proc/%d/fdinfo/%d", pid, fd);
++			fi = fopen(fpath, "r");
++			if (!fi)
++				continue;
++			fscanf(fi, "pos:\t%lli", &pos);
++			fclose(fi);
++
++			printf("%s\t%d\t%d\t%llu\t%s\n",
++				comm, pid, fd, pos, realpath);
++		}
++	}
++	return 0;
++}
++
++int lsof_syscalls(int argc, char *argv[])
++{
++	int start_pid = 1;
++	int pids[SIZE];
++	long count;
++
++	puts("NAME\tPID\tFD\tPOS\tPATH");
++	while ((count = syscall(__NR_pidmap, 0, pids, SIZE,
++				start_pid, PIDMAP_PROC)) > 0) {
++		int i;
++
++		for (i = 0; i < count; i++) {
++			int ret, start_fd = 0, fds[SIZE];
++			struct taskinfo ti;
++
++			syscall(__NR_pidinfo, pids[i], 0, &ti);
++
++			while ((ret = syscall(__NR_fdmap, pids[i], fds, SIZE,
++							start_fd, 0)) > 0) {
++				int j;
++
++				for (j = 0; j < ret; j++) {
++					char fibuf[SIZE];
++					struct fdinfo *fi = (void *) fibuf;
++					long r = syscall(__NR_pidfdinfo,
++						pids[i], fds[j], fi, SIZE);
++
++					if (r < 0)
++						continue;
++					fibuf[r] = '\0';
++					printf("%s\t%d\t%d\t%llu\t%s\n",
++							ti.comm,
++							pids[i],
++							fds[j],
++							fi->pos,
++							fi->path);
++				}
++
++				start_fd = fds[ret - 1] + 1;
++			}
++
++			if (ret < 0)
++				continue;
++		}
++		start_pid = pids[count - 1] + 1;
++	}
++	return count;
++}
+diff --git a/samples/taskinfo/pidmap-bench.c b/samples/taskinfo/pidmap-bench.c
+new file mode 100644
+index 000000000000..ef46a78b2381
+--- /dev/null
++++ b/samples/taskinfo/pidmap-bench.c
+@@ -0,0 +1,124 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++#include <sys/time.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/wait.h>
++#include <sys/syscall.h>
++#include <signal.h>
++#include <fcntl.h>
++#include <dirent.h>
++#include <linux/taskinfo.h>
++
++#define PAGE		4096
++#define DEF_COUNT	100000
++
++inline void pidmap_proc(void);
++inline void pidmap_syscalls(void);
++
++int main(int argc, char *argv[])
++{
++	struct timeval start, end;
++	int i, count = argc > 1 ? atoi(argv[1]) : DEF_COUNT;
++	int n = argc > 2 ? atoi(argv[2]) : 1000;
++	float proc_result, syscall_result, speedup;
++
++	for (i = 0; i < n; i++) {
++		int ret = fork();
++		if (ret < 0)
++			perror("fork");
++		if (ret == 0)
++			return waitpid(-1, NULL, 0);
++	}
++
++	gettimeofday(&start, NULL);
++	for (i = 0; i < count; i++)
++		pidmap_proc();
++	gettimeofday(&end, NULL);
++	proc_result = ( ( end.tv_sec  - start.tv_sec) * 1000000
++			+ end.tv_usec - start.tv_usec) / (float) count;
++	printf("/proc/ mean time\t%.4f ms\n", proc_result);
++
++	gettimeofday(&start, NULL);
++	for (i = 0; i < count; i++)
++		pidmap_syscalls();
++	gettimeofday(&end, NULL);
++	syscall_result = ((end.tv_sec  - start.tv_sec) * 1000000
++			 + end.tv_usec - start.tv_usec) / (float) count;
++
++	speedup = (float) (proc_result / syscall_result - 1.) * 100;
++
++	printf("sys_pidmap() mean time\t%.4f ms\n"
++		"\tSpeedup: %.2f%%\n",
++		syscall_result, speedup);
++
++	killpg(0, SIGKILL);
++	return 0;
++}
++
++inline void pidmap_proc(void)
++{
++	int *pid, n;
++	DIR *dir = opendir("/proc");
++	struct dirent *dirs;
++
++	n = 0;
++	pid = NULL;
++
++	while ((dirs = readdir(dir))) {
++		char dname[32] = "";
++		DIR *task_dir;
++
++		if (dirs->d_name[0] < '0' || dirs->d_name[0] > '9')
++			continue;
++
++		strcpy(dname, "/proc/");
++		strcat(dname, dirs->d_name);
++		strcat(dname, "/task");
++		task_dir = opendir(dname);
++
++		if (task_dir) {
++			struct dirent *task_dirs;
++
++			while ((task_dirs = readdir(task_dir))) {
++				if (task_dirs->d_name[0] < '0' ||
++						task_dirs->d_name[0] > '9')
++					continue;
++
++				pid = (int *)realloc(pid, (n + 1) *
++								sizeof(int));
++				if (pid == NULL)
++					return;
++				pid[n] = atoi(task_dirs->d_name);
++				n += 1;
++			}
++		} else {
++			pid = (int *)realloc(pid, (n + 1) * sizeof(int));
++			if (pid == NULL)
++				return;
++			pid[n] = atoi(dirs->d_name);
++			n += 1;
++		}
++		closedir(task_dir);
++	}
++	closedir(dir);
++	free(pid);
++}
++
++inline void pidmap_syscalls(void)
++{
++	int *pid, res_count, n;
++	int start_pid = 1;
++
++	pid = (int *)malloc(PAGE * sizeof(int));
++	res_count = 0;
++
++	while ((n = syscall(__NR_pidmap, 0, pid + res_count, PAGE, start_pid,
++			   PIDMAP_TASKS)) > 0) {
++		res_count += n;
++		pid = (int *)realloc(pid, (res_count + PAGE) * sizeof(int));
++		start_pid = pid[res_count - 1] + 1;
++	}
++}
+diff --git a/samples/taskinfo/readlink-bench.c b/samples/taskinfo/readlink-bench.c
+new file mode 100644
+index 000000000000..69fa66b026bf
+--- /dev/null
++++ b/samples/taskinfo/readlink-bench.c
+@@ -0,0 +1,70 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <sys/time.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/syscall.h>
++#include <fcntl.h>
++#include <linux/taskinfo.h>
++
++#define PAGE		4096
++#define DEF_COUNT	100000
++
++inline void readlink_proc(int fd);
++inline void readlink_syscalls(int fd);
++
++int main(int argc, char *argv[])
++{
++	struct timeval start, end;
++	int i, fd, count = argc > 1 ? atoi(argv[1]) : DEF_COUNT;
++	float proc_result, syscall_result, speedup;
++
++	fd = open(".", O_RDONLY);
++	if (fd == -1) {
++		perror("open");
++		return 1;
++	}
++
++	gettimeofday(&start, NULL);
++	for (i = 0; i < count; i++)
++		readlink_proc(fd);
++	gettimeofday(&end, NULL);
++	proc_result = ( ( end.tv_sec  - start.tv_sec) * 1000000
++			+ end.tv_usec - start.tv_usec) / (float) count;
++	printf("/proc/self/fd/%d mean time\t%.4f ms\n", fd, proc_result);
++
++	gettimeofday(&start, NULL);
++	for (i = 0; i < count; i++)
++		readlink_syscalls(fd);
++	gettimeofday(&end, NULL);
++	syscall_result = ((end.tv_sec  - start.tv_sec) * 1000000
++			 + end.tv_usec - start.tv_usec) / (float) count;
++
++	speedup = (float) (proc_result / syscall_result - 1.) * 100;
++
++	printf("sys_pidfdinfo() mean time\t%.4f ms\n"
++		"\tSpeedup: %.2f%%\n",
++		syscall_result, speedup);
++
++	close(fd);
++	return 0;
++}
++
++inline void readlink_proc(int fd)
++{
++	char realpath[PAGE], procpath[PAGE];
++
++	snprintf(procpath, PAGE, "/proc/self/fd/%d", fd);
++	if (readlink(procpath, realpath, PAGE) < 0)
++		perror("readlink");
++}
++
++inline void readlink_syscalls(int fd)
++{
++	char fibuf[PAGE];
++	struct fdinfo *fi = (void *) fibuf;
++
++	if (syscall(__NR_pidfdinfo, 0, fd, fi, PAGE) < 0)
++		perror("pidfdinfo");
++}
 diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 3c9c0bbe7dbb..3bf00050912c 100644
+index 3c9c0bbe7dbb..c3c06c692448 100644
 --- a/tools/testing/selftests/Makefile
 +++ b/tools/testing/selftests/Makefile
 @@ -6,6 +6,7 @@ TARGETS += cpufreq
@@ -903,11 +1307,12 @@ index 3c9c0bbe7dbb..3bf00050912c 100644
  TARGETS += firmware
  TARGETS += ftrace
  TARGETS += futex
-@@ -21,6 +22,7 @@ TARGETS += mount
+@@ -21,6 +22,8 @@ TARGETS += mount
  TARGETS += mqueue
  TARGETS += net
  TARGETS += nsfs
 +TARGETS += pidmap
++TARGETS += pidfdinfo
  TARGETS += powerpc
  TARGETS += pstore
  TARGETS += ptrace
