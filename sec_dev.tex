@@ -1038,4 +1038,18 @@ TEST_HARNESS_MAIN
 \medskip
 
 Макрос \texttt{TEST()} опеределяет тестирующую функцию и определенное количество
-вспомогательных структур.
+вспомогательных структур. \texttt{ASSERT\_NE()}, \texttt{ASSERT\_EQ()} и другие
+подобные макросы используются для проверки ожидаемых значений, а
+\texttt{TEST\_HARNESS\_MAIN} разоврачивается в функцию \texttt{main()}:
+\medskip
+\begin{lstlisting}[style=cstyle]
+#define TEST_HARNESS_MAIN \
+	int main(int argc, char **argv) { \
+		return test_harness_run(argc, argv); \
+	}
+\end{lstlisting}
+\medskip
+
+Каждая функция, описанная при помощи \texttt{TEST()} запускается в отдельном
+процессе, а основной процесс только контролирует успешность работы тестов в виде
+кода возврата процесса и подсчетом результатов.
