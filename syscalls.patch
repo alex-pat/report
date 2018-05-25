@@ -547,10 +547,10 @@ index 172d151d429c..69a27cb490f4 100644
  
 diff --git a/kernel/pidmap.c b/kernel/pidmap.c
 new file mode 100644
-index 000000000000..0b286c341053
+index 000000000000..9cf895e1b345
 --- /dev/null
 +++ b/kernel/pidmap.c
-@@ -0,0 +1,349 @@
+@@ -0,0 +1,347 @@
 +#include <linux/bitops.h>
 +#include <linux/cred.h>
 +#include <linux/kernel.h>
@@ -847,7 +847,6 @@ index 000000000000..0b286c341053
 +		struct taskinfo __user *, buffer)
 +{
 +	struct task_struct *task, *tracer;
-+	struct user_namespace *ns;
 +	struct pid_namespace *pidns = task_active_pid_ns(current);
 +	struct taskinfo tinfo;
 +	long flags;
@@ -862,7 +861,6 @@ index 000000000000..0b286c341053
 +		rcu_read_unlock();
 +		return PTR_ERR(task);
 +	}
-+	ns = get_user_ns(__task_cred(task)->user_ns);
 +
 +	tracer = ptrace_parent(task);
 +	tinfo.tracer_id = tracer ? task_pid_nr_ns(tracer, pidns) : 0;
@@ -935,15 +933,15 @@ index 000000000000..3055dab099da
 +pidmap-bench
 diff --git a/samples/taskinfo/Makefile b/samples/taskinfo/Makefile
 new file mode 100644
-index 000000000000..4d52b96cd11a
+index 000000000000..f478aa014960
 --- /dev/null
 +++ b/samples/taskinfo/Makefile
-@@ -0,0 +1,12 @@
+@@ -0,0 +1,13 @@
 +# kbuild trick to avoid linker error. Can be omitted if a module is built.
 +obj- := dummy.o
 +
 +# List of programs to build
-+hostprogs-$(CONFIG_PIDMAP) := lsof readlink-bench pidmap-bench
++hostprogs-$(CONFIG_PIDMAP) := lsof readlink-bench pidmap-bench pidfdopen
 +
 +# Tell kbuild to always build the programs
 +always := $(hostprogs-y)
@@ -951,6 +949,7 @@ index 000000000000..4d52b96cd11a
 +HOSTCFLAGS_lsof.o += -I$(objtree)/usr/include
 +HOSTCFLAGS_readlink-bench.o += -I$(objtree)/usr/include
 +HOSTCFLAGS_pidmap-bench.o += -I$(objtree)/usr/include
++HOSTCFLAGS_pidfdopen.o += -I$(objtree)/usr/include
 diff --git a/samples/taskinfo/lsof.c b/samples/taskinfo/lsof.c
 new file mode 100644
 index 000000000000..ac142df0c2d4
@@ -1088,6 +1087,41 @@ index 000000000000..ac142df0c2d4
 +		start_pid = pids[count - 1] + 1;
 +	}
 +	return count;
++}
+diff --git a/samples/taskinfo/pidfdopen.c b/samples/taskinfo/pidfdopen.c
+new file mode 100644
+index 000000000000..72eb0d540b17
+--- /dev/null
++++ b/samples/taskinfo/pidfdopen.c
+@@ -0,0 +1,29 @@
++#define _GNU_SOURCE
++#include <unistd.h>
++#include <sys/syscall.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++int main(int argc, char *argv[])
++{
++	pid_t pid;
++	int fd, newfd;
++	char buf[256];
++	ssize_t size;
++
++	if (argc != 3)
++		return 1;
++	pid = atoi(argv[1]);
++	fd = atoi(argv[2]);
++
++	newfd = syscall(__NR_pidfdopen, pid, fd, O_RDONLY);
++	printf("Returned %d, errno=%d\n", newfd, errno);
++	if (newfd < 0)
++		return -newfd;
++	while ((size = read(newfd, buf, sizeof(buf))) > 0)
++		write(1, buf, size);
++	close(newfd);
++	return 0;
 +}
 diff --git a/samples/taskinfo/pidmap-bench.c b/samples/taskinfo/pidmap-bench.c
 new file mode 100644
@@ -1641,10 +1675,10 @@ index 000000000000..debbf824cc0a
 +include ../lib.mk
 diff --git a/tools/testing/selftests/pidfdinfo/pidfdinfo.c b/tools/testing/selftests/pidfdinfo/pidfdinfo.c
 new file mode 100644
-index 000000000000..9f622780cd10
+index 000000000000..2b02cacd5568
 --- /dev/null
 +++ b/tools/testing/selftests/pidfdinfo/pidfdinfo.c
-@@ -0,0 +1,143 @@
+@@ -0,0 +1,140 @@
 +#define _GNU_SOURCE
 +#include <stddef.h>
 +#include <sys/types.h>
@@ -1774,17 +1808,14 @@ index 000000000000..9f622780cd10
 +TEST(page_edge)
 +{
 +	void *page;
-+	struct fdinfo *fi;
-+	unsigned int offset = offsetof(struct fdinfo, path);
 +
-+	page = mmap(NULL, SIZE * 2, PROT_WRITE,
++	page = mmap(NULL, SIZE * 3, PROT_NONE,
 +			MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 +	ASSERT_NE(MAP_FAILED, page);
-+	ASSERT_NE(-1, mprotect(page + SIZE, SIZE, PROT_NONE));
++	ASSERT_NE(-1, mprotect(page + SIZE, SIZE, PROT_WRITE));
 +
-+	fi = page + SIZE - offset;
-+	ASSERT_EQ(offset, pidfdinfo(getpid(), 1, fi, offset));
-+	munmap(page, SIZE * 2);
++	ASSERT_LT(0, pidfdinfo(0, 1, page + SIZE, SIZE));
++	munmap(page, SIZE * 3);
 +}
 +
 +TEST_HARNESS_MAIN
