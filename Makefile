@@ -24,6 +24,9 @@ $(PRACTICE_REPORT_PDF).pdf: *.tex *.bib
 	$(PDFLATEX) $(PRACTICE_REPORT_PDF)
 	$(PDFLATEX) $(PRACTICE_REPORT_PDF)
 
+review.pdf: review.tex preamble.tex
+	$(PDFLATEX) review.tex
+
 cleanall: clean
 	$(RM)  *.pdf
 
